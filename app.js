@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebas
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { quizData } from './questions.js';
 
+// 【ここを自分のAPIキー等に書き換えてください】
 const firebaseConfig = {
   apiKey: "AIzaSyBehsuA-Wnurzy1Xt2ZTdjz-pEkE517viI",
   authDomain: "chem-basic-quiz.firebaseapp.com",
@@ -27,12 +28,24 @@ const unitContainer = document.getElementById("unit-buttons");
 Object.keys(quizData).forEach(unit => {
     const btn = document.createElement("button");
     btn.innerText = unit;
-    btn.onclick = () => startQuiz(unit);
+    btn.onclick = () => selectUnit(unit);
     unitContainer.appendChild(btn);
 });
 
-function startQuiz(unit) {
+// 単元を選択した時の挙動
+function selectUnit(unit) {
     currentUnit = unit;
+    document.getElementById("ranking-title").innerText = `${unit} のTOP 5`;
+    document.getElementById("home-ranking-area").classList.remove("hidden");
+    showRanking("home-ranking-list");
+}
+
+// クイズ開始ボタン
+document.getElementById("start-confirm-button").onclick = () => {
+    startQuiz(currentUnit);
+};
+
+function startQuiz(unit) {
     currentIndex = 0;
     score = 0;
     combo = 0;
@@ -82,36 +95,62 @@ function checkAnswer(idx) {
     document.getElementById("score-display").innerText = `Score: ${score}`;
     document.getElementById("combo-display").innerText = `Combo: ${combo}`;
     currentIndex++;
-    setTimeout(showQuestion, 800);
+    setTimeout(showQuestion, 600);
 }
 
 async function endQuiz() {
     document.getElementById("quiz-screen").classList.add("hidden");
     document.getElementById("result-screen").classList.remove("hidden");
-    document.getElementById("final-score").innerText = `${currentUnit}のスコア: ${score}点`;
-    
-    await showRanking();
+    document.getElementById("final-score").innerText = `${currentUnit}：${score}点`;
+    await showRanking("result-ranking-list");
 }
 
 // スコア保存
 document.getElementById("save-button").onclick = async () => {
     const name = document.getElementById("player-name").value || "匿名希望";
-    await addDoc(collection(db, "rankings"), {
-        name: name,
-        unit: currentUnit,
-        score: score,
-        date: new Date()
-    });
-    alert("登録しました！");
-    await showRanking();
+    document.getElementById("save-button").disabled = true;
+    document.getElementById("save-button").innerText = "保存中...";
+    try {
+        await addDoc(collection(db, "rankings"), {
+            name: name,
+            unit: currentUnit,
+            score: score,
+            date: new Date()
+        });
+        alert("ランキングに登録しました！");
+        await showRanking("result-ranking-list");
+    } catch (e) {
+        console.error(e);
+        alert("保存に失敗しました。");
+    } finally {
+        document.getElementById("save-button").innerText = "登録完了";
+    }
 };
 
-async function showRanking() {
-    const q = query(collection(db, "rankings"), where("unit", "==", currentUnit), orderBy("score", "desc"), limit(5));
-    const snap = await getDocs(q);
-    let html = "<h3>TOP 5</h3>";
-    snap.forEach(doc => {
-        html += `<p>${doc.data().name}: ${doc.data().score}点</p>`;
-    });
-    document.getElementById("ranking-list").innerHTML = html;
+// ランキング表示関数
+async function showRanking(targetId) {
+    const display = document.getElementById(targetId);
+    display.innerHTML = "読み込み中...";
+    try {
+        const q = query(
+            collection(db, "rankings"), 
+            where("unit", "==", currentUnit), 
+            orderBy("score", "desc"), 
+            limit(5)
+        );
+        const snap = await getDocs(q);
+        let html = "";
+        if (snap.empty) {
+            html = "<p>データがまだありません。</p>";
+        } else {
+            snap.forEach(doc => {
+                const d = doc.data();
+                html += `<div class="ranking-item"><span>${d.name}</span><span>${d.score}点</span></div>`;
+            });
+        }
+        display.innerHTML = html;
+    } catch (err) {
+        console.error(err);
+        display.innerHTML = "ランキングの取得に失敗しました。";
+    }
 }
