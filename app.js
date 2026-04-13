@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebas
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { quizData } from './questions.js';
 
-// 【ここを自分のAPIキー等に書き換えてください】
+// 【ここに以前取得したご自身の設定情報を貼り付けてください】
 const firebaseConfig = {
   apiKey: "AIzaSyBehsuA-Wnurzy1Xt2ZTdjz-pEkE517viI",
   authDomain: "chem-basic-quiz.firebaseapp.com",
@@ -23,7 +23,6 @@ let combo = 0;
 let timer;
 let timeLeft = 10;
 
-// 初期化：単元ボタンの生成
 const unitContainer = document.getElementById("unit-buttons");
 Object.keys(quizData).forEach(unit => {
     const btn = document.createElement("button");
@@ -32,15 +31,13 @@ Object.keys(quizData).forEach(unit => {
     unitContainer.appendChild(btn);
 });
 
-// 単元を選択した時の挙動
 function selectUnit(unit) {
     currentUnit = unit;
-    document.getElementById("ranking-title").innerText = `${unit} のTOP 5`;
+    document.getElementById("ranking-title").innerText = `${unit} のTOP 10`;
     document.getElementById("home-ranking-area").classList.remove("hidden");
     showRanking("home-ranking-list");
 }
 
-// クイズ開始ボタン
 document.getElementById("start-confirm-button").onclick = () => {
     startQuiz(currentUnit);
 };
@@ -105,14 +102,18 @@ async function endQuiz() {
     await showRanking("result-ranking-list");
 }
 
-// スコア保存
 document.getElementById("save-button").onclick = async () => {
-    const name = document.getElementById("player-name").value || "匿名希望";
-    document.getElementById("save-button").disabled = true;
-    document.getElementById("save-button").innerText = "保存中...";
+    const schoolName = document.getElementById("school-name").value || "不明";
+    const playerName = document.getElementById("player-name").value || "匿名希望";
+    
+    const btn = document.getElementById("save-button");
+    btn.disabled = true;
+    btn.innerText = "保存中...";
+    
     try {
         await addDoc(collection(db, "rankings"), {
-            name: name,
+            school: schoolName,
+            name: playerName,
             unit: currentUnit,
             score: score,
             date: new Date()
@@ -122,12 +123,13 @@ document.getElementById("save-button").onclick = async () => {
     } catch (e) {
         console.error(e);
         alert("保存に失敗しました。");
+        btn.disabled = false;
+        btn.innerText = "ランキングに登録";
     } finally {
-        document.getElementById("save-button").innerText = "登録完了";
+        btn.innerText = "登録完了";
     }
 };
 
-// ランキング表示関数
 async function showRanking(targetId) {
     const display = document.getElementById(targetId);
     display.innerHTML = "読み込み中...";
@@ -136,16 +138,27 @@ async function showRanking(targetId) {
             collection(db, "rankings"), 
             where("unit", "==", currentUnit), 
             orderBy("score", "desc"), 
-            limit(5)
+            limit(10) // ここを10に変更
         );
         const snap = await getDocs(q);
         let html = "";
         if (snap.empty) {
             html = "<p>データがまだありません。</p>";
         } else {
+            let rank = 1;
             snap.forEach(doc => {
                 const d = doc.data();
-                html += `<div class="ranking-item"><span>${d.name}</span><span>${d.score}点</span></div>`;
+                const school = d.school || "不明";
+                html += `
+                    <div class="ranking-item">
+                        <span>${rank}. </span>
+                        <div class="ranking-info">
+                            <span class="ranking-school">${school}</span>
+                            <span class="ranking-name">${d.name}</span>
+                        </div>
+                        <span class="ranking-score">${d.score}点</span>
+                    </div>`;
+                rank++;
             });
         }
         display.innerHTML = html;
