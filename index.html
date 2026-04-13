@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>化学基礎クイズ - 実戦演習</title>
+    <title>化学基礎クイズ</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
         <div id="home-screen">
             <h1>化学基礎 クイズ</h1>
-            <p>単元を選択してスタート！</p>
+            <p>単元を選択してください。</p>
             <div id="unit-buttons"></div>
+            
+            <div id="home-ranking-area" class="ranking-box hidden">
+                <h3 id="ranking-title">ランキング</h3>
+                <div id="home-ranking-list"></div>
+                <button id="start-confirm-button" class="start-btn">この単元で挑戦する！</button>
+            </div>
         </div>
 
         <div id="quiz-screen" class="hidden">
@@ -29,10 +35,10 @@
         <div id="result-screen" class="hidden">
             <h2>結果発表</h2>
             <p id="final-score"></p>
-            <input type="text" id="player-name" placeholder="名前（ニックネーム）を入力" maxlength="10">
+            <input type="text" id="player-name" placeholder="名前（ニックネーム）" maxlength="10">
             <button id="save-button">ランキングに登録</button>
-            <div id="ranking-list"></div>
-            <button onclick="location.reload()">ホームに戻る</button>
+            <div id="result-ranking-list" class="ranking-box"></div>
+            <button onclick="location.reload()" class="back-btn">ホームに戻る</button>
         </div>
     </div>
 
