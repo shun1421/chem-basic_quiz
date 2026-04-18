@@ -21,7 +21,7 @@ let currentIndex = 0;
 let score = 0;
 let combo = 0;
 let timer;
-let timeLeft = 10;
+let timeLeft = 15;
 
 // 初期化：単元ボタンの生成
 const unitContainer = document.getElementById("unit-buttons");
@@ -84,12 +84,12 @@ function showQuestion() {
 }
 
 function startTimer() {
-    timeLeft = 10;
+    timeLeft = 15;
     document.getElementById("timer-bar").style.width = "100%";
     clearInterval(timer);
     timer = setInterval(() => {
         timeLeft -= 0.1;
-        document.getElementById("timer-bar").style.width = (timeLeft * 10) + "%";
+        document.getElementById("timer-bar").style.width = (timeLeft * 15) + "%";
         if (timeLeft <= 0) checkAnswer(-1); // 時間切れ
     }, 100);
 }
