@@ -111,7 +111,7 @@ function checkAnswer(idx) {
 
     if (idx === correct) {
         combo++;
-        score += 100 + (combo * 50) + Math.floor(timeLeft * 10);
+        score += 100 + (combo * 5) + Math.floor(timeLeft * 2);
     } else {
         combo = 0;
     }
