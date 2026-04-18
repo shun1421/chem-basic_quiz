@@ -89,7 +89,7 @@ function startTimer() {
     clearInterval(timer);
     timer = setInterval(() => {
         timeLeft -= 0.1;
-        document.getElementById("timer-bar").style.width = (timeLeft * 15) + "%";
+        document.getElementById("timer-bar").style.width = (timeLeft / 15 * 100) + "%";
         if (timeLeft <= 0) checkAnswer(-1); // 時間切れ
     }, 100);
 }
