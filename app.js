@@ -1,5 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+// ↓ 追加
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { quizData } from './questions.js';
 
 const firebaseConfig = {
@@ -14,6 +16,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+// ↓ 追加
+const auth = getAuth(app);
+signInAnonymously(auth).catch(e => console.error("ログインエラー:", e));
 
 let currentUnit = "";
 let sessionQuestions = [];
