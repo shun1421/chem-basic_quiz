@@ -1,3 +1,8 @@
+// ============ 追加部分 ============
+firebase.auth().signInAnonymously().catch(error => {
+    console.error('ログインエラー:', error);
+});
+// ==================================
 let allQuestions = [];
 let currentQuestions = [];
 let score = 0;
