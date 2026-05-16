@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-// ↓ 追加
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { quizData } from './questions.js';
 
@@ -16,9 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-// ↓ 追加
 const auth = getAuth(app);
-signInAnonymously(auth).catch(e => console.error("ログインエラー:", e));
 
 let currentUnit = "";
 let sessionQuestions = [];
@@ -28,14 +25,54 @@ let combo = 0;
 let timer;
 let timeLeft = 15;
 
-// 初期化：単元ボタンの生成
-const unitContainer = document.getElementById("unit-buttons");
-Object.keys(quizData).forEach(unit => {
-    const btn = document.createElement("button");
-    btn.innerText = unit;
-    btn.onclick = () => selectUnit(unit);
-    unitContainer.appendChild(btn);
-});
+// ログイン完了後にアプリを初期化する（ログイン前にFirestoreへアクセスしないようにする）
+signInAnonymously(auth)
+  .then(() => {
+    console.log("匿名ログイン成功");
+    initApp();
+  })
+  .catch(e => console.error("ログインエラー:", e));
+
+function initApp() {
+    // 単元ボタンの生成
+    const unitContainer = document.getElementById("unit-buttons");
+    Object.keys(quizData).forEach(unit => {
+        const btn = document.createElement("button");
+        btn.innerText = unit;
+        btn.onclick = () => selectUnit(unit);
+        unitContainer.appendChild(btn);
+    });
+
+    document.getElementById("start-confirm-button").onclick = () => {
+        startQuiz(currentUnit);
+    };
+
+    document.getElementById("save-button").onclick = async () => {
+        const schoolName = document.getElementById("school-name").value || "不明";
+        const playerName = document.getElementById("player-name").value || "匿名希望";
+        const btn = document.getElementById("save-button");
+        btn.disabled = true;
+        btn.innerText = "保存中...";
+        try {
+            await addDoc(collection(db, "rankings"), {
+                school: schoolName,
+                name: playerName,
+                unit: currentUnit,
+                score: score,
+                date: new Date()
+            });
+            alert("ランキングに登録しました！");
+            await showRanking("result-ranking-list");
+        } catch (e) {
+            console.error(e);
+            alert("保存に失敗しました。");
+            btn.disabled = false;
+            btn.innerText = "ランキングに登録";
+        } finally {
+            btn.innerText = "登録完了";
+        }
+    };
+}
 
 function selectUnit(unit) {
     currentUnit = unit;
@@ -43,10 +80,6 @@ function selectUnit(unit) {
     document.getElementById("home-ranking-area").classList.remove("hidden");
     showRanking("home-ranking-list");
 }
-
-document.getElementById("start-confirm-button").onclick = () => {
-    startQuiz(currentUnit);
-};
 
 // 配列をランダムに並び替える関数（Fisher-Yatesシャッフル）
 function shuffle(array) {
@@ -58,7 +91,6 @@ function shuffle(array) {
 }
 
 function startQuiz(unit) {
-    // 10問をランダムに抽出する（全問題からシャッフルして最初の10問を取る）
     const allQuestions = [...quizData[unit]];
     sessionQuestions = shuffle(allQuestions).slice(0, 10);
     
@@ -104,13 +136,12 @@ function checkAnswer(idx) {
     const correct = sessionQuestions[currentIndex].correct;
     const buttons = document.getElementById("answer-buttons").querySelectorAll("button");
     
-    // 全ボタンを無効化し，色をつける
     buttons.forEach((btn, i) => {
-        btn.disabled = true; // 連続クリック防止
+        btn.disabled = true;
         if (i === correct) {
-            btn.classList.add("correct"); // 正解は常に緑
+            btn.classList.add("correct");
         } else if (i === idx) {
-            btn.classList.add("incorrect"); // 間違えて選んだボタンは赤
+            btn.classList.add("incorrect");
         }
     });
 
@@ -125,7 +156,6 @@ function checkAnswer(idx) {
     document.getElementById("combo-display").innerText = `Combo: ${combo}`;
     
     currentIndex++;
-    // 色を確認できるよう，少し待ってから次の問題へ
     setTimeout(showQuestion, 1200);
 }
 
@@ -135,32 +165,6 @@ async function endQuiz() {
     document.getElementById("final-score").innerText = `${currentUnit}：${score}点`;
     await showRanking("result-ranking-list");
 }
-
-document.getElementById("save-button").onclick = async () => {
-    const schoolName = document.getElementById("school-name").value || "不明";
-    const playerName = document.getElementById("player-name").value || "匿名希望";
-    const btn = document.getElementById("save-button");
-    btn.disabled = true;
-    btn.innerText = "保存中...";
-    try {
-        await addDoc(collection(db, "rankings"), {
-            school: schoolName,
-            name: playerName,
-            unit: currentUnit,
-            score: score,
-            date: new Date()
-        });
-        alert("ランキングに登録しました！");
-        await showRanking("result-ranking-list");
-    } catch (e) {
-        console.error(e);
-        alert("保存に失敗しました。");
-        btn.disabled = false;
-        btn.innerText = "ランキングに登録";
-    } finally {
-        btn.innerText = "登録完了";
-    }
-};
 
 async function showRanking(targetId) {
     const display = document.getElementById(targetId);
